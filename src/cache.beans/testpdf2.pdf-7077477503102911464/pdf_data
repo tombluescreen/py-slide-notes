@@ -1,0 +1,339 @@
+Domain Constraints Referential Integrity
+Integrity Checking
+Translating Integrity Rules to SQL
+Chuan LU
+(With credit to Nigel Hardy)
+Modelling Persistent Data
+CS27020
+Computer Science Department
+1 / 24
+Domain Constraints Referential Integrity
+Outline
+1Domain Constraints
+2Referential Integrity
+Simple Cases
+2 / 24
+Domain Constraints Referential Integrity
+Domains
+The relational model says that domains must exist
+SQL speciﬁes a minimum list of data types
+Varies with versions of SQL
+https://en.wikibooks.org/wiki/Structured_Query_Language/Data_Types
+Each DBMS will oﬀer these plus possibly more
+Postgres: https://www.postgresql.org/docs/11/datatype.html
+Some attributes may beneﬁt from tighter constraint on values
+3 / 24
+Domain Constraints Referential Integrity
+Attributes with constraints
+Limiting acceptable values when the table is created
+or “ALTER”ed
+(NOT NULL )
+CHECKclauses can be added
+to individual attributes
+to the table, concerning attributes
+4 / 24
+Domain Constraints Referential Integrity
+Simple CHECK
+CREATE TABLE p r o d u c t s (
+product_no integer ,
+name text ,
+p r i c e numeric CHECK ( p r i c e > 0)
+) ;
+Credit: Postgresql documentation
+https://www.postgresql.org/docs/11/ddl-constraints.html
+5 / 24
+Domain Constraints Referential Integrity
+Named constraint
+CREATE TABLE p r o d u c t s (
+product_no integer ,
+name text ,
+p r i c e numeric
+CONSTRAINT p o s i t i v e _ p r i c e CHECK ( p r i c e > 0)
+) ;
+Credit: Postgresql documentation
+https://www.postgresql.org/docs/11/ddl-constraints.html
+6 / 24
+Domain Constraints Referential Integrity
+Table constraints
+CREATE TABLE p r o d u c t s (
+product_no integer ,
+name text ,
+p r i c e numeric CHECK ( p r i c e > 0) ,
+d i s c o u n t e d _ p r i c e numeric CHECK ( d i s c o u n t e d _ p r i c e > 0) ,
+CHECK ( p r i c e > d i s c o u n t e d _ p r i c e )
+) ;
+Credit: Postgresql documentation
+https://www.postgresql.org/docs/9.6/ddl-constraints.html
+7 / 24
+Domain Constraints Referential Integrity
+Application program constraint
+Domain constraint could be left to the application program
+Duplicate code, error prone
+Possible that constraints vary with time or circumstance
+Double check may be beneﬁcial
+“front end” feedback
+8 / 24
+Domain Constraints Referential Integrity
+Creating new domains
+Multiple use
+CREATE DOMAIN name [ AS ] data_type
+[COLLATE c o l l a t i o n ]
+[DEFAULT e x p r e s s i o n ]
+[c o n s t r a i n t [ . . . ] ]
+where c o n s t r a i n t i s :
+[CONSTRAINT constraint_name ]
+{NOT NULL |NULL |CHECK ( e x p r e s s i o n ) }
+Credit: Postgresql documentation
+https://www.postgresql.org/docs/9.6/ddl-constraints.html
+9 / 24
+Domain Constraints Referential Integrity
+New domain example
+DROP DOMAIN IFEXISTS cooktemp ;
+CREATE DOMAIN cooktemp AS INT
+CHECK (VALUE >= 100 AND VALUE <=250) ;
+CREATE TABLE r e c e i p e (
+name VARCHAR (30) PRIMARY KEY ,
+temp cooktemp
+−− and o b v i o u s l y o t h e r a t t r i b u t e s
+) ;
+INSERT INTO r e c e i p e VALUES ( ’Jam Tarts ’ ,180) ;
+INSERT INTO r e c e i p e VALUES ( ’ Mince P i e s ’ ,1800) ;
+10 / 24
+Domain Constraints Referential Integrity
+IN construct
+“enumeration”
+CREATE TABLE s t u d e n t s (
+i dVARCHAR ( 9) PRIMARY KEY ,
+name VARCHAR (30) ,
+−− and o t h e r a t t r i b u t e s
+l e v e l VARCHAR ( 3) CHECK IN ( ’UG ’ , ’PGT ’ , ’PGR ’ )
+) ;
+Is the list ﬁxed permanently?
+Would an FK be better?
+11 / 24
+Domain Constraints Referential Integrity
+Outline
+1Domain Constraints
+2Referential Integrity
+Simple Cases
+12 / 24
+Domain Constraints Referential Integrity
+Outline
+1Domain Constraints
+2Referential Integrity
+Simple Cases
+13 / 24
+Domain Constraints Referential Integrity
+One to Many (Optional Many)
+Integrity Rules: A module must be run by a single department;
+however, a department can have zero to many modules (i.e.
+service departments vs. academic departments).
+The “many” end contains a foreign key reference to the “one” end.
+14 / 24
+Domain Constraints Referential Integrity
+One to Many (Optional Many) - SQL implementation
+CREATE TABLE Department (
+i dVARCHAR ( 5) PRIMARY KEY ,
+name VARCHAR (50) ,
+UNIQUE ( id , name ) ) ;
+CREATE TABLE Module (
+i dVARCHAR ( 7) PRIMARY KEY ,
+deptID VARCHAR ( 5) NOT NULL
+REFERENCES Department ( i d ) ,
+t i t l e VARCHAR (50) ,
+UNIQUE ( id , deptID , t i t l e ) ) ;
+(70_DeptModule.sql)
+15 / 24
+Domain Constraints Referential Integrity
+One to Many (Optional Many)
+Cardinality implementations:
+0There need be no module record with a particular depart-
+ment PK planted
+*There can be many module records with a particular de-
+partment PK planted
+1ID is a PK - it cannot be null
+1ID is a PK - it cannot be duplicated(In all these examples for “PK” read “PK or CK”)
+16 / 24
+Domain Constraints Referential Integrity
+One to Many (Optional Many)
+Cardinality implementations:
+0There need be no module record with a particular depart-
+ment PK planted
+*There can be many module records with a particular de-
+partment PK planted
+1ID is a PK - it cannot be null
+1ID is a PK - it cannot be duplicated
+(In all these examples for “PK” read “PK or CK”)
+16 / 24
+Domain Constraints Referential Integrity
+Many to Many (Optional Both Sides)
+Integrity Rules: A student may take no modules, or may take
+one or more modules. A module may have no registered students,
+or may have several.
+The many-to-many relationship becomes a new relation with a
+composite key (the takesrelationship becomes the Takes relation).
+(StudentModule.sql)
+17 / 24
+Domain Constraints Referential Integrity
+Many to Many (Optional Both Sides) - SQL
+implementation
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50) ) ;
+CREATE TABLE Module (
+i dVARCHAR ( 7) PRIMARY KEY ,
+t i t l e VARCHAR (50) ,
+UNIQUE ( id , t i t l e ) ) ;
+CREATE TABLE Takes (
+studID VARCHAR ( 5)
+REFERENCES Student ( s tude ntID ) ,
+modID VARCHAR ( 7)
+REFERENCES Module ( i d ) ,
+PRIMARY KEY ( studID , modID )
+) ;
+(80_StudentModule.sql)
+18 / 24
+Domain Constraints Referential Integrity
+Many to Many (Optional Both Sides)
+Cardinality implementations:
+0There need be no takes record with a particular module
+PK planted
+*There can be many takes records with a particular module
+PK planted
+0There need be no takes record with a particular student
+PK planted
+*There can be many takes records with a particular student
+PK planted
+student cannot take the same module twice: PK of takes
+19 / 24
+Domain Constraints Referential Integrity
+One to N (Optional Both Sides)
+Integrity Rules: A student may have at most one sponsor. A
+sponsor may have no students, or may have several.
+Create a new relation with same key as ‘many’ end.
+(StudentSponsor.sql)
+20 / 24
+Domain Constraints Referential Integrity
+One to N (Optional Both Sides) - SQL implementation
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50) ) ;
+CREATE TABLE Sponsor (
+companyID VARCHAR ( 6) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Sponsors (
+stu dent ID VARCHAR ( 5)
+REFERENCES Student ( s tude ntID ) ,
+companyID VARCHAR ( 6)
+REFERENCES Sponsor ( companyID ) ,
+PRIMARY KEY ( s tude ntID ) ) ;
+(90_StudentSponsor.sql)
+21 / 24
+Domain Constraints Referential Integrity
+One to N (Optional Both Sides)
+Cardinality implementations:
+0Thereneedbenosponsorsrecordwithaparticularstudent
+PK planted
+1There can only be 1 sponsors record with a particular stu-
+dent PK planted - PK (unique)
+0Thereneedbenosponsorsrecordwithaparticularsponsor
+PK planted
+*There can be many sponsors records with a particular
+sponsor PK planted
+22 / 24
+Domain Constraints Referential Integrity
+Alternative One to N (Optional Both Sides)
+Allow a NULLFKCREATE TABLE Sponsor (
+companyID VARCHAR ( 6) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50) ) ;
+CREATE TABLE Sponsors (
+stu dent ID VARCHAR ( 5)
+REFERENCES Student ( s tude ntID ) ,
+companyID VARCHAR ( 6) NOT NULL
+REFERENCES Sponsor ( companyID ) ,
+PRIMARY KEY ( s tude ntID ) ) ;CREATE TABLE Sponsor (
+companyID VARCHAR ( 6 ) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5 ) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50)
+s p o n s o r VARCHAR ( 6)
+REFERENCES Sponsor ( companyID ) ;
+23 / 24
+Domain Constraints Referential Integrity
+Alternative One to N (Optional Both Sides)
+Allow a NULLFK
+CREATE TABLE Sponsor (
+companyID VARCHAR ( 6) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50) ) ;
+CREATE TABLE Sponsors (
+stu dent ID VARCHAR ( 5)
+REFERENCES Student ( s tude ntID ) ,
+companyID VARCHAR ( 6) NOT NULL
+REFERENCES Sponsor ( companyID ) ,
+PRIMARY KEY ( s tude ntID ) ) ;CREATE TABLE Sponsor (
+companyID VARCHAR ( 6 ) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5 ) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50)
+s p o n s o r VARCHAR ( 6)
+REFERENCES Sponsor ( companyID ) ;
+23 / 24
+Domain Constraints Referential Integrity
+Alternative One to N (Optional Both Sides)
+Allow a NULLFK
+CREATE TABLE Sponsor (
+companyID VARCHAR ( 6) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50) ) ;
+CREATE TABLE Sponsors (
+stu dent ID VARCHAR ( 5)
+REFERENCES Student ( s tude ntID ) ,
+companyID VARCHAR ( 6) NOT NULL
+REFERENCES Sponsor ( companyID ) ,
+PRIMARY KEY ( s tude ntID ) ) ;CREATE TABLE Sponsor (
+companyID VARCHAR ( 6 ) PRIMARY KEY ,
+companyName TEXT,
+UNIQUE ( companyID , companyName ) ) ;
+CREATE TABLE Student (
+stu dent ID VARCHAR ( 5 ) PRIMARY KEY ,
+f i r s t n a m e VARCHAR (50) ,
+surname VARCHAR (50)
+s p o n s o r VARCHAR ( 6)
+REFERENCES Sponsor ( companyID ) ;
+23 / 24
+Domain Constraints Referential Integrity
+Integrity Checking so far
+UNIQUE
+NOT NULL
+Build-in domains (types)
+CHECK
+new DOMAIN
+Referential Integrity for
+1:M (Optional many)
+M:N (Optional on Both Sides)
+1:N (Optional on Both Sides)
+Code available from Blackboard
+24 / 24
